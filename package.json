@@ -1,0 +1,16 @@
+{
+  "name": "teaching-evaluation-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @tep/shared && npm run build -w @tep/api && npm run build -w @tep/admin-web && npm run build -w @tep/student-h5",
+    "dev:api": "npm run dev -w @tep/api",
+    "dev:admin": "npm run dev -w @tep/admin-web",
+    "dev:student": "npm run dev -w @tep/student-h5",
+    "test": "npm run test -w @tep/shared && npm run test -w @tep/api"
+  }
+}
