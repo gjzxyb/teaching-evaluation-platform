@@ -54,6 +54,11 @@ export interface TaskReportDataset {
   responses: EvaluationResponse[];
 }
 
+export interface DemoSeedResult {
+  task: EvaluationTask;
+  instances: EvaluationInstance[];
+}
+
 interface TemplateReader {
   getTemplate(tenantId: string, templateId: string): EvaluationTemplate & { status?: string };
 }
@@ -199,6 +204,40 @@ export class EvaluationService {
     return [...this.instances.values()]
       .filter((instance) => instance.evaluatorUserId === userId)
       .map((instance) => ({ ...instance }));
+  }
+
+  seedDemoData(tenantId: string): DemoSeedResult {
+    const existing = this.listTasks(tenantId).find((task) => task.id === 'task-demo-student-flow');
+    if (existing) {
+      return {
+        task: existing,
+        instances: this.listTaskInstances(tenantId, existing.id)
+      };
+    }
+
+    const task: EvaluationTask = {
+      id: 'task-demo-student-flow',
+      tenantId,
+      taskName: '2026 春季课程评价',
+      schoolYear: '2025-2026',
+      termCode: 'spring',
+      templateId: 'tpl-course-basic',
+      sampleThreshold: 1,
+      status: 'draft'
+    };
+    const template = this.templateReader.getTemplate(tenantId, task.templateId);
+    if (template.tenantId !== tenantId || template.status !== 'published') {
+      throw new BadRequestException('Demo seed requires published template tpl-course-basic');
+    }
+
+    this.tasks.set(task.id, task);
+    this.templatesByTask.set(task.id, template);
+    const published = this.publishTask(tenantId, task.id);
+
+    return {
+      task: published,
+      instances: this.listTaskInstances(tenantId, task.id)
+    };
   }
 
   saveDraft(instanceId: string, input: DraftSubmissionRequest): EvaluationResponse {

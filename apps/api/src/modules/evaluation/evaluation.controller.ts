@@ -27,6 +27,11 @@ export class EvaluationController {
     return apiSuccess(this.evaluationService.getHistory(tenantId, userId));
   }
 
+  @Post('demo/seed')
+  seedDemoData(@Query('tenantId') tenantId = 'demo') {
+    return apiSuccess(this.evaluationService.seedDemoData(tenantId));
+  }
+
   @Post('tasks')
   createTask(@Body() input: CreateTaskRequest) {
     const task = this.evaluationService.createTask(input);

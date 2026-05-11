@@ -28,6 +28,14 @@ export interface UpdateActionPlanRequest {
   actionPlan: string;
 }
 
+export interface CreateObservationTicketInput {
+  tenantId: string;
+  sourceId: string;
+  ownerUserId: string;
+  problemDesc: string;
+  dueDate: string;
+}
+
 const tickets: ImprovementTicket[] = [];
 
 @Injectable()
@@ -81,6 +89,30 @@ export class ImprovementService {
     return tickets
       .filter((ticket) => ticket.tenantId === tenantId)
       .map((ticket) => ({ ...ticket }));
+  }
+
+  createObservationTicket(input: CreateObservationTicketInput): ImprovementTicket {
+    const existing = tickets.find((ticket) =>
+      ticket.tenantId === input.tenantId &&
+      ticket.sourceType === 'observation' &&
+      ticket.sourceId === input.sourceId
+    );
+    if (existing) {
+      return { ...existing };
+    }
+
+    const ticket: ImprovementTicket = {
+      id: `improvement-${tickets.length + 1}`,
+      tenantId: input.tenantId,
+      sourceType: 'observation',
+      sourceId: input.sourceId,
+      ownerUserId: input.ownerUserId,
+      problemDesc: input.problemDesc,
+      dueDate: input.dueDate,
+      status: 'open'
+    };
+    tickets.push(ticket);
+    return { ...ticket };
   }
 
   getTicket(tenantId: string, ticketId: string): ImprovementTicket {

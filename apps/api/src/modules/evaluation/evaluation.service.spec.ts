@@ -130,3 +130,46 @@ test('rejects creating a task from an unpublished template', () => {
     /published template/
   );
 });
+
+test('seeds demo evaluation task idempotently for API-backed student flow', () => {
+  const service = new EvaluationService();
+
+  const firstSeed = service.seedDemoData('demo');
+  const secondSeed = service.seedDemoData('demo');
+
+  assert.equal(firstSeed.task.status, 'running');
+  assert.equal(firstSeed.instances.length, 1);
+  assert.equal(firstSeed.instances[0]?.evaluatorUserId, 'u-student-1');
+  assert.equal(secondSeed.task.id, firstSeed.task.id);
+  assert.equal(service.getMyTasks('u-student-1').filter((item) => item.taskId === firstSeed.task.id).length, 1);
+});
+
+test('runs seed to student submit smoke flow for the demo task', () => {
+  const service = new EvaluationService();
+
+  const seed = service.seedDemoData('demo');
+  const instance = seed.instances[0]!;
+  const detail = service.getInstanceDetail('demo', instance.id, 'u-student-1');
+  const answers = detail.template.questions.map((question) => ({
+    questionId: question.id,
+    scoreValue: question.type === 'rating' ? Math.min(question.maxScore ?? 5, 5) : undefined,
+    textValue: question.type === 'text' ? '课堂节奏清晰，互动充分' : undefined
+  }));
+
+  const draft = service.saveDraft(instance.id, {
+    tenantId: 'demo',
+    evaluatorUserId: 'u-student-1',
+    answers
+  });
+  assert.equal(draft.status, 'draft');
+
+  const submitted = service.submit(instance.id, {
+    tenantId: 'demo',
+    evaluatorUserId: 'u-student-1',
+    answers
+  });
+
+  assert.equal(submitted.status, 'submitted');
+  assert.equal(service.getHistory('demo', 'u-student-1').length, 1);
+  assert.equal(service.listTaskInstances('demo', seed.task.id)[0]?.status, 'submitted');
+});

@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { GlobalExceptionFilter } from './infrastructure/http/global-exception.filter.js';
+import { TraceResponseInterceptor } from './infrastructure/http/trace-response.interceptor.js';
 import { AppModule } from './modules/app.module.js';
 
 async function bootstrap() {
@@ -8,6 +10,8 @@ async function bootstrap() {
     origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174'],
     credentials: true
   });
+  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(new TraceResponseInterceptor());
   app.setGlobalPrefix('api');
   await app.listen(3000);
 }

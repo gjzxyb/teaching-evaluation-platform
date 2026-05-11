@@ -106,6 +106,21 @@ create table base_course (
   unique (tenant_id, course_code)
 );
 
+create table master_data_sync_job (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  entity_type varchar(32) not null,
+  sync_mode varchar(32) not null default 'manual',
+  source varchar(64),
+  sync_type varchar(32),
+  status varchar(32) not null,
+  success_count int not null default 0,
+  failure_count int not null default 0,
+  error_payload jsonb,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
 create table eval_indicator (
   id varchar(64) primary key,
   tenant_id varchar(64) not null references tenants(id),
@@ -244,6 +259,35 @@ create table audit_log (
   created_at timestamptz not null default now()
 );
 
+create table storage_object (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  owner_user_id varchar(64) references sys_user(id),
+  provider varchar(32) not null,
+  object_key varchar(512) not null,
+  filename varchar(255) not null,
+  content_type varchar(128) not null,
+  size_bytes bigint not null default 0,
+  status varchar(32) not null default 'available',
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+
+create table export_job (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  requester_user_id varchar(64) references sys_user(id),
+  task_id varchar(64) references eval_task(id),
+  report_type varchar(64) not null,
+  export_format varchar(32) not null,
+  status varchar(32) not null default 'pending',
+  filename varchar(255) not null,
+  object_id varchar(64) references storage_object(id),
+  payload jsonb,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
 create table eval_report_snapshot (
   id varchar(64) primary key,
   tenant_id varchar(64) not null references tenants(id),
@@ -254,6 +298,18 @@ create table eval_report_snapshot (
   submitted_count int not null default 0,
   payload jsonb not null,
   generated_at timestamptz not null default now()
+);
+
+create table text_analysis_summary (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  task_id varchar(64) not null references eval_task(id),
+  source varchar(32) not null default 'manual',
+  provider varchar(64),
+  keywords_payload jsonb,
+  summary text,
+  author_user_id varchar(64) references sys_user(id),
+  created_at timestamptz not null default now()
 );
 
 create table eval_improvement_ticket (
@@ -272,11 +328,74 @@ create table eval_improvement_ticket (
   updated_at timestamptz not null default now()
 );
 
+create table teacher_self_evaluation (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  teacher_id varchar(64) not null references base_teacher(id),
+  task_id varchar(64) references eval_task(id),
+  strengths text not null,
+  weaknesses text not null,
+  improvement_plan text not null,
+  status varchar(32) not null default 'submitted',
+  created_at timestamptz not null default now()
+);
+
+create table supervision_observation_task (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  course_id varchar(64) references base_course(id),
+  teacher_id varchar(64) references base_teacher(id),
+  class_org_id varchar(64) references sys_org_unit(id),
+  supervisor_user_id varchar(64) references sys_user(id),
+  scheduled_at timestamptz not null,
+  status varchar(32) not null default 'scheduled',
+  created_at timestamptz not null default now()
+);
+
+create table supervision_observation (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  task_id varchar(64) not null references supervision_observation_task(id),
+  supervisor_user_id varchar(64) references sys_user(id),
+  teacher_id varchar(64) references base_teacher(id),
+  scores_payload jsonb not null,
+  comments text,
+  improvement_ticket_ids jsonb,
+  submitted_at timestamptz not null default now()
+);
+
+create table parent_feedback (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  parent_user_id varchar(64) references sys_user(id),
+  student_id varchar(64) references base_student(id),
+  class_org_id varchar(64) references sys_org_unit(id),
+  category varchar(32) not null,
+  rating int not null,
+  content text not null,
+  risk_level varchar(32) not null default 'normal',
+  status varchar(32) not null default 'submitted',
+  handler_user_id varchar(64) references sys_user(id),
+  handling_result text,
+  submitted_at timestamptz not null default now(),
+  handled_at timestamptz
+);
+
+create table composite_analysis_snapshot (
+  id varchar(64) primary key,
+  tenant_id varchar(64) not null references tenants(id),
+  subject_type varchar(32) not null,
+  subject_id varchar(64) not null,
+  payload jsonb not null,
+  generated_at timestamptz not null default now()
+);
+
 create index idx_user_tenant_type on sys_user(tenant_id, user_type);
 create index idx_org_tenant_parent on sys_org_unit(tenant_id, parent_id);
 create index idx_teacher_tenant_org on base_teacher(tenant_id, org_id);
 create index idx_student_tenant_class on base_student(tenant_id, class_org_id);
 create index idx_course_tenant_org on base_course(tenant_id, owner_org_id);
+create index idx_master_data_sync_job on master_data_sync_job(tenant_id, entity_type, status, started_at);
 create index idx_indicator_tenant_status on eval_indicator(tenant_id, status);
 create index idx_question_tenant_indicator on eval_question(tenant_id, indicator_id);
 create index idx_template_tenant_status on eval_template(tenant_id, status);
@@ -290,6 +409,15 @@ create index idx_eval_response_item_response on eval_response_item(tenant_id, re
 create index idx_notify_log_biz on notify_log(tenant_id, biz_type, biz_id, status);
 create index idx_audit_log_tenant_action on audit_log(tenant_id, action, created_at);
 create index idx_audit_log_actor on audit_log(tenant_id, actor_user_id, created_at);
+create index idx_storage_object_owner on storage_object(tenant_id, owner_user_id, status, created_at);
+create index idx_export_job_task on export_job(tenant_id, task_id, report_type, status, created_at);
 create index idx_report_snapshot_task_type on eval_report_snapshot(tenant_id, task_id, report_type, generated_at);
+create index idx_text_analysis_summary_task on text_analysis_summary(tenant_id, task_id, created_at);
 create index idx_improvement_owner_status on eval_improvement_ticket(tenant_id, owner_user_id, status);
 create unique index idx_improvement_source_unique on eval_improvement_ticket(tenant_id, source_type, source_id);
+create index idx_teacher_self_evaluation on teacher_self_evaluation(tenant_id, teacher_id, task_id, created_at);
+create index idx_supervision_task on supervision_observation_task(tenant_id, supervisor_user_id, teacher_id, status, scheduled_at);
+create index idx_supervision_observation on supervision_observation(tenant_id, task_id, teacher_id, submitted_at);
+create index idx_parent_feedback_student on parent_feedback(tenant_id, student_id, status, submitted_at);
+create index idx_parent_feedback_class_risk on parent_feedback(tenant_id, class_org_id, risk_level, status, submitted_at);
+create index idx_composite_analysis_snapshot on composite_analysis_snapshot(tenant_id, subject_type, subject_id, generated_at);

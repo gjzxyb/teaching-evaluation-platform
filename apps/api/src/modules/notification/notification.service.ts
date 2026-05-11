@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   NOTIFICATION_LOG_REPOSITORY,
   NotificationLogRepository
@@ -41,11 +41,7 @@ export interface NotificationQuery {
 export class NotificationService {
   private readonly logs: NotificationLog[] = [];
 
-  constructor(
-    @Optional()
-    @Inject(NOTIFICATION_LOG_REPOSITORY)
-    private readonly repository?: NotificationLogRepository
-  ) {}
+  constructor(private readonly repository?: NotificationLogRepository) {}
 
   record(input: CreateNotificationLog): NotificationLog {
     const log: NotificationLog = {

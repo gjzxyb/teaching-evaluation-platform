@@ -10,6 +10,10 @@ const navItems = [
   { to: '/tasks', label: '评价任务' },
   { to: '/reports', label: '基础报表' },
   { to: '/improvements', label: '整改闭环' },
+  { to: '/teacher-workbench', label: '教师端' },
+  { to: '/supervision', label: '督导端' },
+  { to: '/parent-feedback', label: '家长反馈' },
+  { to: '/composite-analysis', label: '综合分析' },
   { to: '/messages', label: '消息审计' }
 ];
 
@@ -75,6 +79,10 @@ function Shell() {
           <Route path="/tasks" element={<TasksPage data={adminData} />} />
           <Route path="/reports" element={<ReportsPage data={adminData} />} />
           <Route path="/improvements" element={<ImprovementsPage data={adminData} />} />
+          <Route path="/teacher-workbench" element={<TeacherWorkbenchPage data={adminData} />} />
+          <Route path="/supervision" element={<SupervisionPage data={adminData} />} />
+          <Route path="/parent-feedback" element={<ParentFeedbackPage data={adminData} />} />
+          <Route path="/composite-analysis" element={<CompositeAnalysisPage data={adminData} />} />
           <Route path="/messages" element={<MessagesPage data={adminData} />} />
         </Routes>
       </main>
@@ -171,6 +179,94 @@ function ImprovementsPage({ data }: { data: AdminData }) {
   );
 }
 
+function TeacherWorkbenchPage({ data }: { data: AdminData }) {
+  return (
+    <section className="content-grid">
+      <Panel title="教师结果概览">
+        <div className="report-band stacked">
+          <strong>{data.teacherOverview.averageScore.toFixed(1)}</strong>
+          <span>
+            {data.teacherOverview.teacherId} · 已提交样本 {data.teacherOverview.submittedCount}
+          </span>
+        </div>
+        <div className="tag-row">
+          {data.teacherOverview.keywords.map((keyword) => <span key={keyword}>{keyword}</span>)}
+        </div>
+      </Panel>
+      <Panel title="自评与成长档案">
+        <DataTable
+          columns={['任务', '优势', '短板', '改进计划']}
+          rows={data.teacherOverview.selfEvaluations.map((item) => [
+            item.taskId,
+            item.strengths,
+            item.weaknesses,
+            item.improvementPlan
+          ])}
+        />
+      </Panel>
+    </section>
+  );
+}
+
+function SupervisionPage({ data }: { data: AdminData }) {
+  return (
+    <section className="content-grid">
+      <Panel title="课堂观察任务" action="创建观察任务">
+        <DataTable
+          columns={['任务', '教师', '督导', '状态', '计划时间']}
+          rows={data.supervision.tasks}
+        />
+      </Panel>
+      <Panel title="观察记录与整改触发">
+        <DataTable
+          columns={['记录', '教师', '维度评分', '整改单数']}
+          rows={data.supervision.observations}
+        />
+      </Panel>
+    </section>
+  );
+}
+
+function ParentFeedbackPage({ data }: { data: AdminData }) {
+  return (
+    <Panel title="家长反馈" action="处理高风险">
+      <DataTable
+        columns={['编号', '学生', '班级', '类别', '风险', '状态']}
+        rows={data.parentFeedback.map((item) => [
+          item.id,
+          item.studentId,
+          item.classOrgId,
+          item.category,
+          item.riskLevel,
+          item.status
+        ])}
+      />
+    </Panel>
+  );
+}
+
+function CompositeAnalysisPage({ data }: { data: AdminData }) {
+  const profile = data.compositeProfile;
+  return (
+    <section className="content-grid">
+      <Panel title="教师综合画像">
+        <div className="profile-grid">
+          <Metric label="评价均分" value={profile.averageScore.toFixed(1)} />
+          <Metric label="观察次数" value={String(profile.observationCount)} />
+          <Metric label="高风险反馈" value={String(profile.highRiskCount)} />
+          <Metric label="自评记录" value={String(profile.selfEvaluationCount)} />
+        </div>
+      </Panel>
+      <Panel title="风险信号">
+        <div className="tag-row warning">
+          {profile.riskSignals.length === 0 ? <span>暂无风险信号</span> : null}
+          {profile.riskSignals.map((signal) => <span key={signal}>{signal}</span>)}
+        </div>
+      </Panel>
+    </section>
+  );
+}
+
 function MessagesPage({ data }: { data: AdminData }) {
   const notifyRows = data.logs.filter((log) => log.type === '通知');
   const auditRows = data.logs.filter((log) => log.type === '审计');
@@ -202,6 +298,15 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
       </div>
       {children}
     </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mini-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

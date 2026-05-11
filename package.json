@@ -11,6 +11,11 @@
     "dev:api": "npm run dev -w @tep/api",
     "dev:admin": "npm run dev -w @tep/admin-web",
     "dev:student": "npm run dev -w @tep/student-h5",
+    "demo:seed": "node scripts/seed-demo.mjs",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "infra:config": "docker compose -f infra/docker-compose.yml config",
     "test": "npm run test -w @tep/shared && npm run test -w @tep/api"
   }
 }

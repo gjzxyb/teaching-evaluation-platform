@@ -18,3 +18,33 @@ export const fallbackLogs = [
     { type: '审计', action: 'eval.response.submit', target: 'instance-1', result: 'recorded' },
     { type: '审计', action: 'improvement.ticket.close', target: 'improvement-1', result: 'recorded' }
 ];
+export const fallbackTeacherOverview = {
+    teacherId: 'teacher-demo-1',
+    submittedCount: 86,
+    averageScore: 8.7,
+    keywords: ['课堂清晰', '互动充分', '反馈及时'],
+    selfEvaluations: [
+        { taskId: 'self-2026-spring', strengths: '教学目标清晰', weaknesses: '分层互动不足', improvementPlan: '增加小组讨论' }
+    ]
+};
+export const fallbackSupervision = {
+    tasks: [
+        { id: 'OBS-T-001', teacherId: 'teacher-demo-1', supervisor: '督导甲', status: 'scheduled', scheduledAt: '2026-06-01' },
+        { id: 'OBS-T-002', teacherId: 'teacher-demo-2', supervisor: '督导乙', status: 'submitted', scheduledAt: '2026-06-03' }
+    ],
+    observations: [
+        { id: 'OBS-001', teacherId: 'teacher-demo-1', dimensions: 'class-design:2, engagement:4', tickets: '1' }
+    ]
+};
+export const fallbackParentFeedback = [
+    { id: 'PF-001', studentId: 'student-demo-1', classOrgId: 'org-class-demo', category: 'safety', riskLevel: 'high', status: 'submitted' },
+    { id: 'PF-002', studentId: 'student-demo-2', classOrgId: 'org-class-demo', category: 'course', riskLevel: 'normal', status: 'handled' }
+];
+export const fallbackCompositeProfile = {
+    teacherId: 'teacher-demo-1',
+    averageScore: 8.7,
+    observationCount: 2,
+    highRiskCount: 1,
+    selfEvaluationCount: 1,
+    riskSignals: ['low-observation-score:class-design', 'high-risk-parent-feedback:1']
+};

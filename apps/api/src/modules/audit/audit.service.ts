@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AUDIT_LOG_REPOSITORY, AuditLogRepository } from './audit.repository.js';
 
 export interface AuditEvent {
@@ -19,11 +19,7 @@ export interface AuditQuery {
 export class AuditService {
   private readonly events: AuditEvent[] = [];
 
-  constructor(
-    @Optional()
-    @Inject(AUDIT_LOG_REPOSITORY)
-    private readonly repository?: AuditLogRepository
-  ) {}
+  constructor(private readonly repository?: AuditLogRepository) {}
 
   record(event: AuditEvent) {
     this.events.push(event);
